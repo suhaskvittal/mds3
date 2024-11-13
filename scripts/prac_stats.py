@@ -19,7 +19,7 @@ def get_stats_from_file(f: str):
             dat = line.split('=')
             dat[1] = dat[1][:dat[1].find('#')]
         else:
-            dat = line.split('\t')
+            dat = line.split(':')
         if len(dat) <= 1:
             continue
         for i in range(2):
@@ -59,11 +59,11 @@ for f in stat_files:
     if bname in ['add', 'copy', 'scale', 'bfs', 'sssp', 'tc', 'bfs', 'cc', 'pr', 'bc']:
         continue
     d = get_stats_from_file(fr'out/{f}')
-    if float(d['CORE_0_MPKI']) < 1.0:
+    if float(d['CORE_00_MPKI']) < 1.0:
         continue
     gmlogipc = 1.0
     for i in range(NCORE):
-        gmlogipc += math.log( float(d[f'CORE_{i}_IPC']) )
+        gmlogipc += math.log( float(d[f'CORE_0{i}_IPC']) )
     gmipc = math.e**(gmlogipc/NCORE)
     stats[fp]['log_ipc'] += gmlogipc/NCORE
     stats[fp]['tot_files'] += 1
