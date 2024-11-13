@@ -31,7 +31,8 @@ policies = [
         'BASE_',
         'PRAC_ONLY_DELAY',
         'PRAC_MOAT_ath512',
-        'PRAC_PAC_ath512'
+        'PRAC_PAC_ath512',
+        'PRAC_MOPAC_ath512',
         ]
 stats = {}
 for p in policies:
@@ -45,7 +46,6 @@ for p in policies:
 
 stat_files = [ f for f in os.listdir('out') if f.endswith('.out') ]
 for f in stat_files:
-    print(f)
     fp = None
     # Identify policy that the file has data for
     for p in policies:
@@ -58,6 +58,7 @@ for f in stat_files:
     bname = f.split('_')[0]
     if bname in ['add', 'copy', 'scale', 'bfs', 'sssp', 'tc', 'bfs', 'cc', 'pr', 'bc']:
         continue
+    print(f, bname)
     d = get_stats_from_file(fr'out/{f}')
     if float(d['CORE_00_MPKI']) < 1.0:
         continue

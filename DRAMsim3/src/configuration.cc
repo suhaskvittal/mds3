@@ -280,8 +280,11 @@ void Config::InitSystemParams() {
     moat_ath = GetInteger("system", "MoatATH", 256);
     pac_prob = GetInteger("system", "PacProb", 8);
     mopac_buf_size = GetInteger("system", "MopacBufSize", 5);
+    mopac_abo_updates = GetInteger("system", "MopacABOUpdates", 5);
+    mopac_ref_updates = GetInteger("system", "MopacREFUpdates", 2);
 
-    std::cout << "PRAC: [ moat_ath = " << moat_ath << ", (pac) 1/p = " << pac_prob << "]\n";
+    std::cout << "PRAC: [ moat_ath = " << moat_ath << ", (pac) 1/p = " << pac_prob << ", mopac buf size = " 
+        << mopac_buf_size << ", updates = " << mopac_ref_updates << ";" << mopac_abo_updates << " ]\n";
 
     return;
 }

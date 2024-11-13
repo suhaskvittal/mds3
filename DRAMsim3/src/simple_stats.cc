@@ -53,14 +53,15 @@ SimpleStats::SimpleStats(const Config& config, int channel_id)
     InitStat("refb_energy", "double", "Refresh-bank energy");
 
     InitVecStat("prac_per_tREFI", "vec_counter", "PRAC counters per tREFI", "geometric_bin", 13);
+    InitVecStat("acts_per_tREFI", "vec_counter", "ACTs per tREFI", "10s of ACTs", 13);
     // 0, 1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, >= 1024
 
     // Vector counter stats
     InitVecStat("all_bank_idle_cycles", "vec_counter",
-                "Cyles of all bank idle in rank", "rank", config_.ranks);
-    InitVecStat("rank_active_cycles", "vec_counter", "Cyles of rank active",
+                "Cycles of all bank idle in rank", "rank", config_.ranks);
+    InitVecStat("rank_active_cycles", "vec_counter", "Cycles of rank active",
                 "rank", config_.ranks);
-    InitVecStat("sref_cycles", "vec_counter", "Cyles of rank in SREF mode",
+    InitVecStat("sref_cycles", "vec_counter", "Cycles of rank in SREF mode",
                 "rank", config_.ranks);
     
 

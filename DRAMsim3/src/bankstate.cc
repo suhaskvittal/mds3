@@ -1,8 +1,14 @@
 #include "bankstate.h"
-
 #include <random>
 
 namespace dramsim3 {
+
+///////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////
+
+static std::mt19937_64 rng(0);
+static bool pac_next_pre_cmd_is_valid = false;
+static CommandType pac_next_pre_cmd;
 
 ///////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////
@@ -34,6 +40,7 @@ BankState::BankState(const Config& config, SimpleStats& simple_stats, int rank, 
         prac_(config_.rows, 0),
         moat_eth_( config.moat_ath / 2 ),
         moat_ath_( config.moat_ath ),
+        mopac_mint_sel_(rng() % config_.pac_prob),
         ref_idx_(0)
 {
     cmd_timing_[static_cast<int>(CommandType::READ)] = 0;
@@ -61,10 +68,6 @@ BankState::BankState(const Config& config, SimpleStats& simple_stats, int rank, 
 
 ///////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////
-
-static std::mt19937_64 rng(0);
-static bool pac_next_pre_cmd_is_valid = false;
-static CommandType pac_next_pre_cmd;
 
 CommandType
 GetPrechargeCmd(int pac_prob=1) {
@@ -253,13 +256,15 @@ void BankState::UpdateState(const Command& cmd, uint64_t clk) {
                     // MOPAC, they immediately get reset.
                     MopacHandleRef();
 #endif
-                    raa_ctr_ -= std::min<int>(raa_ctr_, config_.ref_raa_decrement);
-                    acts_counter_ = 0;
                     for (int i = 0; i < config_.rows_refreshed; i++) {
                         int idx = (ref_idx_ + i) % config_.rows;
                         simple_stats_.IncrementVec("prac_per_tREFI", get_geostat_bin(prac_[idx]));
                         prac_[idx] = 0;
                     }
+                    simple_stats_.IncrementVec("acts_per_tREFI", acts_counter_/10);
+
+                    raa_ctr_ -= std::min<int>(raa_ctr_, config_.ref_raa_decrement);
+                    acts_counter_ = 0;
 #if USE_PRAC==PRAC_IMPL_MOAT || USE_PRAC==PRAC_IMPL_PAC
                     MoatHandleRef();
 #endif
@@ -379,9 +384,7 @@ void BankState::PrintState() const {
 
 bool
 BankState::CheckAlert() {
-    if (mopac_buf_.size() == config_.mopac_buf_size) {
-        if (bank_ == 0 && rank_ == 0 && bank_group_ == 0) std::cout << "[ALERT] buf size = " << mopac_buf_.size() 
-            << ", acts = " << acts_counter_ << "\n";
+    if (mopac_buf_.size() >= config_.mopac_buf_size) {
         alert_sent_due_to_full_mopac_buf_ = true;
         simple_stats_.Increment("num_mopac_alerts_buf_full");
         return true;
@@ -441,22 +444,52 @@ BankState::MoatHandleRef() {
 ///////////////////////////////////////////////////////////////////
 
 void
-BankState::MopacFlushCtrs() {
-    size_t k = 0;
-    for (auto it = mopac_buf_.begin(); it != mopac_buf_.end(); ) {
-        ++prac_[*it];
-        if (prac_[*it] >= moat_eth_ && (!moat_row_valid_ || prac_[*it] > prac_[moat_row_])) {
-            moat_row_ = *it;
-            moat_row_valid_ = true;
+RemoveAnyRowsBetween(std::vector<size_t>& arr, size_t lwr, size_t upp) {
+    for (auto it = arr.begin(); it != arr.end(); ) {
+        if (*it >= lwr && *it < upp) {
+            it = arr.erase(it);
+        } else {
+            ++it;
         }
-        ++k;
-        it = mopac_buf_.erase(it);
+    }
+}
+
+void
+BankState::MopacFlushNextCtr() {
+    if (mopac_buf_.empty()) return;
+    size_t r = mopac_buf_.front();
+    size_t cnt = 0;
+    for (auto it = mopac_buf_.begin(); it != mopac_buf_.end(); ) {
+        if (*it == r) {
+            ++cnt;
+            it = mopac_buf_.erase(it);
+        } else {
+            ++it;
+        }
+    }
+    prac_[r] += cnt;
+    if (prac_[r] >= moat_eth_ && (!moat_row_valid_ || prac_[r] > prac_[moat_row_])) {
+        moat_row_ = r;
+        moat_row_valid_ = true;
+    }
+}
+
+void
+BankState::MopacFlushAllCtrs() {
+    for (size_t i = 0; i < config_.mopac_abo_updates; i++) {
+        MopacFlushNextCtr();
     }
 }
 
 void
 BankState::MopacHandleRef() {
-    MopacFlushCtrs();
+    // First, handle rows that will be refreshed -- remove
+    // them from `mopac_buf` and `mopac_mint_window`.
+    RemoveAnyRowsBetween(mopac_buf_, ref_idx_, ref_idx_ + config_.rows_refreshed);
+
+    for (size_t i = 0; i < config_.mopac_ref_updates; i++) {
+        MopacFlushNextCtr();
+    }
     MoatCheckTrackedRowIsRefreshed();
 }
 
@@ -464,18 +497,24 @@ void
 BankState::MopacMitigate() {
     // SO this will occur during RFMab. For MOPAC, we will hijack the use of
     // RFMab to simply update counters.
-    if (alert_sent_due_to_full_mopac_buf_) {
-        MopacFlushCtrs();
-    } else {
+    if (mopac_buf_.size() >= config_.mopac_buf_size) {
+        MopacFlushAllCtrs();
+    } else if (moat_row_valid_ && prac_[moat_row_] >= moat_ath_) {
         MoatMitigate();
+    } else {
+        MopacFlushAllCtrs();
     }
 }
 
 void
 BankState::MopacCtrUpdate() {
-    if (rng() % config_.pac_prob == 0) {
-        simple_stats_.Increment("num_mopac_buf_ins");
+    if (mopac_act_ctr_ == mopac_mint_sel_) {
         mopac_buf_.push_back(open_row_);
+        simple_stats_.Increment("num_mopac_buf_ins");
+    }
+    if ((++mopac_act_ctr_) == config_.pac_prob) {
+        mopac_act_ctr_ = 0;
+        mopac_mint_sel_ = rng() % config_.pac_prob;
     }
 }
 

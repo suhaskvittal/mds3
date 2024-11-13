@@ -63,6 +63,8 @@ class Config {
     int moat_ath;
     int pac_prob;
     int mopac_buf_size;
+    int mopac_abo_updates;
+    int mopac_ref_updates;
 
     // Address mapping numbers
     int shift_bits;

@@ -48,7 +48,8 @@ private:
     void MoatMitigate(void);
     void MoatHandleRef(void);
 
-    void MopacFlushCtrs(void);
+    void MopacFlushNextCtr(void);
+    void MopacFlushAllCtrs(void);
     void MopacHandleRef(void);
     void MopacMitigate(void);
     void MopacCtrUpdate(void);
@@ -93,6 +94,9 @@ private:
     size_t moat_eth_;
     size_t moat_ath_;
     size_t moat_trefi_cnt_ =0;
+
+    size_t mopac_act_ctr_ =0;
+    size_t mopac_mint_sel_;
     /*
      * `mopac_buf_` stores up-to 5 rows that will receive counter updates.
      * */

@@ -33,14 +33,14 @@ else:
 # CONFIGS:
 configs = [
 # BASELINES
-    ('BASE', '', 'moat_rth512.ini'),
-    ('PRAC_ONLY_DELAY', '', 'moat_rth512.ini'),
+#   ('BASE', '', 'moat_rth512.ini'),
+#   ('PRAC_ONLY_DELAY', '', 'moat_rth512.ini'),
 # MOAT
-    ('PRAC_MOAT', 'ath512', 'moat_rth512.ini'),
+#   ('PRAC_MOAT', 'ath512', 'moat_rth512.ini'),
 # PAC
-    ('PRAC_PAC', 'ath512', 'pac_rth512.ini'),
+#   ('PRAC_PAC', 'ath512', 'pac_rth512.ini'),
 # MOPAC
-#   ('PRAC_MOPAC', 'ath512', 'pac_ath512.ini')
+    ('PRAC_MOPAC', 'ath512', 'pac_rth512.ini')
 ]
 
 jobs = 0
