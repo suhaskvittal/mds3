@@ -28,10 +28,17 @@ def get_stats_from_file(f: str):
     return d
 
 policies = [
+# BASELINES
         'BASE_',
         'PRAC_ONLY_DELAY',
-        'PRAC_MOAT_ath512',
-        'PRAC_PAC_ath512'
+# MOAT
+        'PRAC_MOAT_ath16',
+        'PRAC_MOAT_ath20',
+        'PRAC_MOAT_ath24',
+        'PRAC_MOAT_ath28',
+        'PRAC_MOAT_ath32',
+        'PRAC_MOAT_ath64',
+        'PRAC_MOAT_ath128',
         ]
 stats = {}
 for p in policies:
@@ -56,8 +63,8 @@ for f in stat_files:
         continue
     # Get important stats of interest from file.
     bname = f.split('_')[0]
-    if bname in ['add', 'copy', 'scale', 'bfs', 'sssp', 'tc', 'bfs', 'cc', 'pr', 'bc']:
-        continue
+#   if bname in ['add', 'copy', 'scale', 'bfs', 'sssp', 'tc', 'bfs', 'cc', 'pr', 'bc']:
+#       continue
     d = get_stats_from_file(fr'out/{f}')
     if float(d['CORE_00_MPKI']) < 1.0:
         continue
