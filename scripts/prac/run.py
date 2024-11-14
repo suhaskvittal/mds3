@@ -7,9 +7,8 @@ from sys import argv
 
 import os
 
-EXEC_WHERE = 'ampere'
-if len(argv) > 1:
-    EXEC_WHERE = argv[1]
+EXEC_WHERE = argv[1]
+EXEC_WHAT = argv[2]
 
 # EXPERIMENT PARAMETERS
 INST = 100_000_000
@@ -31,34 +30,17 @@ if EXEC_WHERE == 'ampere':
 else:
     TRACES = [f for f in os.listdir(TRACE_FOLDER) if f.endswith('.mtf.gz')]
 # CONFIGS:
-configs = [
-# BASELINES
-    ('BASE', '', 'moat_nth500.ini'),
-    ('PRAC_ONLY_DELAY', '', 'moat_nth500.ini'),
-]
-
-# MOAT
-#for ath in [16, 20, 24, 28, 32, 64, 128]:
-#    configs.append( ('PRAC_MOAT', f'ath{ath}', f'moat_ath{ath}.ini') )
-# PAC
-#for ath in [256, 512, 1024]:
-#    configs.append( ('PRAC_PAC', f'ath{ath}', f'pac_ath{ath}.ini') )
-'''
-    PERF EVALS
-'''
-for nth in [500]:
-# MOAT
-#   configs.append( ('PRAC_MOAT', f'nth{nth}', f'moat_nth{nth}.ini') )
-# PAC
-    configs.append( ('PRAC_PAC', f'nth{nth}', f'pac_nth{nth}.ini') )
-# MOPAC
-    configs.append( ('PRAC_MOPAC', f'nth{nth}', f'pac_nth{nth}.ini') )
+if EXEC_WHAT == 'sens_mopac_buf':
+    configs = [ ('PRAC_MOPAC', f'buf{s}', f'prac/sens_mopac_buf/buf{s}.ini') for s in [5, 8, 16, 32, 64] ]
 
 jobs = 0
 for tr in TRACES:
     trpath = f'{TRACE_FOLDER}/{tr}'
     trname = tr.split('.')[0]
+    if '_17' not in trname:
+        continue
     print(trname)
+
     if EXEC_WHERE != 'pace':
         cmd = 'cd builds\n'
     for (build_dir, suffix, cfg) in configs:
