@@ -28,11 +28,19 @@ def get_stats_from_file(f: str):
     return d
 
 policies = [
+# BASELINES
         'BASE_',
         'PRAC_ONLY_DELAY',
-        'PRAC_MOAT_ath512',
-        'PRAC_PAC_ath512',
-        'PRAC_MOPAC_ath512',
+# MOAT
+#       'PRAC_MOAT_ath16',
+#       'PRAC_MOAT_ath20',
+#       'PRAC_MOAT_ath24',
+#       'PRAC_MOAT_ath28',
+#       'PRAC_MOAT_ath32',
+#       'PRAC_MOAT_ath64',
+#       'PRAC_MOAT_ath128',
+        'PRAC_PAC_nth500',
+        'PRAC_MOPAC_nth500',
         ]
 stats = {}
 for p in policies:

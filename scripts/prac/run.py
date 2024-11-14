@@ -33,15 +33,26 @@ else:
 # CONFIGS:
 configs = [
 # BASELINES
-#   ('BASE', '', 'moat_rth512.ini'),
-#   ('PRAC_ONLY_DELAY', '', 'moat_rth512.ini'),
-# MOAT
-#   ('PRAC_MOAT', 'ath512', 'moat_rth512.ini'),
-# PAC
-#   ('PRAC_PAC', 'ath512', 'pac_rth512.ini'),
-# MOPAC
-    ('PRAC_MOPAC', 'ath512', 'pac_rth512.ini')
+    ('BASE', '', 'moat_nth500.ini'),
+    ('PRAC_ONLY_DELAY', '', 'moat_nth500.ini'),
 ]
+
+# MOAT
+#for ath in [16, 20, 24, 28, 32, 64, 128]:
+#    configs.append( ('PRAC_MOAT', f'ath{ath}', f'moat_ath{ath}.ini') )
+# PAC
+#for ath in [256, 512, 1024]:
+#    configs.append( ('PRAC_PAC', f'ath{ath}', f'pac_ath{ath}.ini') )
+'''
+    PERF EVALS
+'''
+for nth in [500]:
+# MOAT
+#   configs.append( ('PRAC_MOAT', f'nth{nth}', f'moat_nth{nth}.ini') )
+# PAC
+    configs.append( ('PRAC_PAC', f'nth{nth}', f'pac_nth{nth}.ini') )
+# MOPAC
+    configs.append( ('PRAC_MOPAC', f'nth{nth}', f'pac_nth{nth}.ini') )
 
 jobs = 0
 for tr in TRACES:
@@ -51,10 +62,10 @@ for tr in TRACES:
     if EXEC_WHERE != 'pace':
         cmd = 'cd builds\n'
     for (build_dir, suffix, cfg) in configs:
-        base_cmd = f'./{build_dir}/sim {trpath} -ratemode 8 -dramsim3cfg ../config_dramsim3/{cfg} -inst_limit {INST}'
+        base_cmd = f'./{build_dir}/sim {trpath} -ratemode 8 -dramsim3cfg ../config_dramsim3/{cfg} -inst_limit {INST} -l3sizemb 8 -l3assoc 8'
         if EXEC_WHERE == 'pace':
             cmd = fr'ls . && cd builds && {base_cmd}'
-            os.system(f'sbatch -N1 --ntasks-per-node=1 --mem-per-cpu=4G -t8:00:00 --account=gts-mqureshi4-rg -o out/{trname}_{build_dir}_{suffix}.out --wrap=\"{cmd}\"')
+            os.system(f'sbatch -N1 --ntasks-per-node=1 --mem-per-cpu=8G -t8:00:00 --account=gts-mqureshi4-rg -o out/{trname}_{build_dir}_{suffix}.out --wrap=\"{cmd}\"')
         else:
             cmd += f'{base_cmd} > ../out/{trname}_{build_dir}_{suffix}.out 2>&1 &\n'
         jobs += 1
