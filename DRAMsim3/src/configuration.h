@@ -65,6 +65,7 @@ class Config {
     int mopac_buf_size;
     int mopac_abo_updates;
     int mopac_ref_updates;
+    int mopac_drain_freq;
 
     // Address mapping numbers
     int shift_bits;

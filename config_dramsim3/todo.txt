@@ -1,6 +1,6 @@
-MOAT varying ATH
-PAC varying ATH
-MOAPC varying ATH and size of the queue
+* MOAT varying ATH
+* PAC varying ATH
+* MOAPC varying ATH and size of the queue
 MOAPC rowpress PAC rowpress
 
 If row is open for longer than 4trc, close it.

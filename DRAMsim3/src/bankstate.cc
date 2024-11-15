@@ -13,18 +13,6 @@ static CommandType pac_next_pre_cmd;
 ///////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////
 
-inline int AdjustedMoatATH(const Config& conf) {
-#if USE_PRAC==PRAC_IMPL_PAC
-    double p = 1.0/((double)conf.pac_prob);
-    double ath_mean = conf.moat_ath * p;
-    double ath_std = sqrt( conf.moat_ath * p * (1-p) );
-    // Rough modeling for now -- will remove the 0.95 adjustment later.
-    return (int) (ceil( ath_mean - 6*ath_std ) * 0.95);
-#else
-    return conf.moat_ath;
-#endif
-}
-
 BankState::BankState(const Config& config, SimpleStats& simple_stats, int rank, int bank_group, int bank)
     :   config_(config),
         simple_stats_(simple_stats),
@@ -487,9 +475,14 @@ BankState::MopacHandleRef() {
     // them from `mopac_buf` and `mopac_mint_window`.
     RemoveAnyRowsBetween(mopac_buf_, ref_idx_, ref_idx_ + config_.rows_refreshed);
 
-    for (size_t i = 0; i < config_.mopac_ref_updates; i++) {
-        MopacFlushNextCtr();
+    if (mopac_drain_countdown_ == 0) {
+        for (size_t i = 0; i < config_.mopac_ref_updates; i++) {
+            MopacFlushNextCtr();
+        }
+        mopac_drain_countdown_ = config_.mopac_drain_freq;
     }
+    --mopac_drain_countdown_;
+
     MoatCheckTrackedRowIsRefreshed();
 }
 

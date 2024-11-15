@@ -97,6 +97,8 @@ private:
 
     size_t mopac_act_ctr_ =0;
     size_t mopac_mint_sel_;
+
+    size_t mopac_drain_countdown_ =0;
     /*
      * `mopac_buf_` stores up-to 5 rows that will receive counter updates.
      * */

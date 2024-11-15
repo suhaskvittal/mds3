@@ -56,7 +56,14 @@ def get_pac_ath(ath: int, p: int):
 POL_BASELINE = 0
 POL_PAC_OR_MOPAC = 1
 
-def write_ini_file(output_file: str, ath: int, pac_prob: int, mopac_buf_size: int, mopac_abo_updates: int, mopac_ref_updates: int):
+def write_ini_file(output_file: str, ath: int,\
+        # Optionals:
+        pac_prob=8,
+        mopac_buf_size=5,
+        mopac_abo_updates=5,
+        mopac_ref_updates=1,
+        mopac_drain_freq=1
+):
     content =\
 f'''
 [dram_structure]
@@ -85,6 +92,7 @@ PacProb = {pac_prob}
 MopacBufSize = {mopac_buf_size}
 MopacABOUpdates = {mopac_abo_updates}
 MopacREFUpdates = {mopac_ref_updates}
+MopacDrainFrequency = {mopac_drain_freq}
 
 [timing]
 tCK = 0.416
@@ -157,11 +165,61 @@ output_prefix = DDR5_baseline
 ##################################################################
 
 # Baseline Config
-write_ini_file('config_dramsim3/prac/baseline.ini', 0,0,0,0,0)
+write_ini_file('config_dramsim3/prac/baseline.ini', 128,8,5,5,1)
+
+##################################################################
+##################################################################
 
 # Sensitivity on MOPAC Buffer Size
 mopac_sens_ath = get_pac_ath(search_for_ath(500), 8)
 for mopac_buf_size in [5, 8, 16, 32, 64]:
-    write_ini_file(f'config_dramsim3/prac/sens_mopac_buf/buf{mopac_buf_size}.ini',\
-                        mopac_sens_ath, 8, mopac_buf_size, 5, 1)
+    for mopac_ref_updates in [0,1,2]:
+        write_ini_file(f'config_dramsim3/prac/sens_mopac_buf/buf{mopac_buf_size}_ref{mopac_ref_updates}.ini',\
+                            mopac_sens_ath,
+                            mopac_buf_size=mopac_buf_size,
+                            mopac_ref_updates=mopac_ref_updates)
 
+# Sensitivity on MOAT ATH
+for ath in [16, 20, 24, 28, 32, 64, 128, 256]:
+    write_ini_file(f'config_dramsim3/prac/sens_moat_ath/ath{ath}.ini', ath)
+
+# Sensitivity on PAC + MOPAC probability
+for pr in [2,4,8,16]:
+    ath = get_pac_ath(search_for_ath(500), pr)
+    if ath < 1.0:
+        print('[ PAC + MOPAC sens on `pr` ] Negative ATH for pr={pr}')
+        continue
+    write_ini_file(f'config_dramsim3/prac/sens_pac_mopac_pr/pr{pr}.ini')
+
+##################################################################
+##################################################################
+
+# PAC with N_RH = 125, 250, 500, 1000, 2000
+for nrh in [125, 250, 500, 1000, 2000]:
+    pr = 2 * (nrh//125)
+    ath = get_pac_ath(search_for_ath(nrh), pr)
+    write_ini_file(f'config_dramsim3/prac/pac/nrh{nrh}.ini', ath, pac_prob=pr)
+
+##################################################################
+##################################################################
+
+for nrh in [125, 250, 500, 1000, 2000]:
+    pr = 2 * (nrh//125)
+    ath = get_pac_ath(search_for_ath(nrh), pr)
+
+    if nrh <= 500:
+        mopac_ref_updates = 2
+        mopac_drain_freq = 1
+    else nrh == 1000:
+        mopac_ref_updates = 1
+        mopac_drain_freq = nrh//1000
+    write_ini_file(f'config_dramsim3/prac/mopac/nrh{nrh}.ini',\
+            ath,
+            pac_prob=pr,
+            mopac_buf_size=16,
+            mopac_abo_updates=5,
+            mopac_ref_updates=mopac_ref_updates,
+            mopac_drain_freq=mopac_drain_freq)
+
+##################################################################
+##################################################################
