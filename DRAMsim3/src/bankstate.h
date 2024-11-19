@@ -1,6 +1,8 @@
 #ifndef __BANKSTATE_H
 #define __BANKSTATE_H
 
+#include <deque>
+#include <unordered_map>
 #include <vector>
 #include "common.h"
 #include "configuration.h"
@@ -18,6 +20,12 @@ struct MIRZA_Q_Entry {
     {
         return "RowID: " + std::to_string(rowid) + " GroupID: " + std::to_string(groupid) + " ActCtr: " + std::to_string(actctr);
     }
+};
+
+struct MopacEntry {
+    size_t row_;
+    size_t sctr_ =0;
+    size_t actr_ =0;
 };
 
 class BankState {
@@ -48,8 +56,10 @@ private:
     void MoatMitigate(void);
     void MoatHandleRef(void);
 
+    void MopacUpdatePRAC(size_t row, size_t by);
     void MopacFlushNextCtr(void);
     void MopacFlushAllCtrs(void);
+    void MopacHandleCriticalRow(void);
     void MopacHandleRef(void);
     void MopacMitigate(void);
     void MopacCtrUpdate(void);
@@ -82,6 +92,10 @@ private:
     std::string acts_stat_name_;
     int acts_counter_;
     /*
+     * Per-row activation counters, but for an entire tREFW (not PRAC)
+     * */
+    std::vector<uint64_t> total_row_acts_;
+    /*
      * Per-row activation counters (PRAC)
      * */
     std::vector<uint16_t> prac_;
@@ -102,8 +116,8 @@ private:
     /*
      * `mopac_buf_` stores up-to 5 rows that will receive counter updates.
      * */
-    bool alert_sent_due_to_full_mopac_buf_ =false;
-    std::vector<size_t> mopac_buf_;
+    std::deque<MopacEntry> mopac_buf_;
+    size_t mopac_critical_rows_ =0;
 
     // [REF]
     uint32_t ref_idx_;

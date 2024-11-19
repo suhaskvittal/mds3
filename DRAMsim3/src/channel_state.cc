@@ -314,10 +314,8 @@ ChannelState::UpdateState(const Command& cmd, uint64_t clk) {
 
         if (cmd.IsRFM()) {
             RankNeedRFM(cmd.Rank(), false);
-            ResetAlert();
         } else if (cmd.IsRefresh()) {
             RankNeedRefresh(cmd.Rank(), false);
-            ResetAlert();
         } else if (cmd.cmd_type == CommandType::SREF_ENTER) {
             rank_is_sref_[cmd.Rank()] = true;
         } else if (cmd.cmd_type == CommandType::SREF_EXIT) {

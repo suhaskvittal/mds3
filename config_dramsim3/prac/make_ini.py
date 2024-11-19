@@ -31,13 +31,13 @@ def N_RH(ath):
 ##################################################################
 
 def search_for_ath(n_rh: int):
-    prev_ath = n_rh
+    ath = n_rh
     while True:
-        new_n_rh = N_RH(prev_ath-1)
-        if new_n_rh < n_rh:
-            return prev_ath
+        new_n_rh = N_RH(ath-1)
+        if new_n_rh <= n_rh:
+            return ath
         else:
-            prev_ath -= 1
+            ath -= 1
 
 def get_pac_ath(ath: int, p: int):
     ath_ = math.floor(ath/p)
@@ -46,9 +46,14 @@ def get_pac_ath(ath: int, p: int):
         pr += ath_ * math.log(1/p)
         pr += (ath-ath_) * math.log(1-1/p)
         pr = math.e**pr
-        if pr < 1e-9:
+        if pr < 5e-9:
             return ath_
         ath_ -= 1
+
+def get_mopac_ath(ath: int, p: int, qth: int):
+    ath1 = ath - get_pac_ath(ath,p)
+    ath2 = ath1 - qth
+    return get_pac_ath(ath2, p)
 
 ##################################################################
 ##################################################################
@@ -59,10 +64,11 @@ POL_PAC_OR_MOPAC = 1
 def write_ini_file(output_file: str, ath: int,\
         # Optionals:
         pac_prob=8,
-        mopac_buf_size=5,
+        mopac_buf_size=16,
         mopac_abo_updates=5,
         mopac_ref_updates=1,
-        mopac_drain_freq=1
+        mopac_drain_freq=1,
+        mopac_queue_th=16
 ):
     content =\
 f'''
@@ -93,6 +99,7 @@ MopacBufSize = {mopac_buf_size}
 MopacABOUpdates = {mopac_abo_updates}
 MopacREFUpdates = {mopac_ref_updates}
 MopacDrainFrequency = {mopac_drain_freq}
+MopacQueueThreshold = {mopac_queue_th}
 
 [timing]
 tCK = 0.416
@@ -137,7 +144,7 @@ tRFM = 840
 [alert]
 alert_mode = 1
 refchunks = 8192
-tABO = 432 # 180 ns
+tABO = 0 # 180 ns
 ABO_delay_acts = 1
 
 [power] 
@@ -171,17 +178,29 @@ write_ini_file('config_dramsim3/prac/baseline.ini', 128,8,5,5,1)
 ##################################################################
 
 # Sensitivity on MOPAC Buffer Size
-mopac_sens_ath = get_pac_ath(search_for_ath(500), 8)
-for mopac_buf_size in [5, 8, 16, 32, 64]:
-    for mopac_ref_updates in [0,1,2]:
-        write_ini_file(f'config_dramsim3/prac/sens_mopac_buf/buf{mopac_buf_size}_ref{mopac_ref_updates}.ini',\
+for nrh in [250, 500, 1000]:
+    pr = 2 * (nrh//125)
+    mopac_sens_ath = get_mopac_ath(search_for_ath(nrh), pr, 8)
+    if nrh <= 500:
+        mopac_ref_updates = 1000//nrh
+        mopac_drain_freq = 1
+    else:
+        mopac_ref_updates = 1
+        mopac_drain_freq = nrh//1000
+    for mopac_buf_size in [5, 8, 16, 32, 64]:
+        write_ini_file(f'config_dramsim3/prac/sens_mopac_buf/buf{mopac_buf_size}_nrh{nrh}.ini',\
                             mopac_sens_ath,
+                            pac_prob=pr,
+                            mopac_abo_updates=5,
+                            mopac_ref_updates=mopac_ref_updates,
                             mopac_buf_size=mopac_buf_size,
-                            mopac_ref_updates=mopac_ref_updates)
+                            mopac_drain_freq=mopac_drain_freq,
+                            mopac_queue_th=8)
 
-# Sensitivity on MOAT ATH
-for ath in [16, 20, 24, 28, 32, 64, 128, 256]:
-    write_ini_file(f'config_dramsim3/prac/sens_moat_ath/ath{ath}.ini', ath)
+# Sensitivity on MOAT NRH
+for nrh in [50,75,100,200,500,1000,4000]:
+    ath = search_for_ath(nrh)
+    write_ini_file(f'config_dramsim3/prac/sens_moat/nrh{nrh}.ini', ath)
 
 # Sensitivity on PAC + MOPAC probability
 for pr in [2,4,8,16]:
@@ -189,28 +208,60 @@ for pr in [2,4,8,16]:
     if ath < 1.0:
         print('[ PAC + MOPAC sens on `pr` ] Negative ATH for pr={pr}')
         continue
-    write_ini_file(f'config_dramsim3/prac/sens_pac_mopac_pr/pr{pr}.ini')
+    write_ini_file(f'config_dramsim3/prac/sens_pac_mopac_pr/pr{pr}.ini', ath,
+                   pac_prob=pr,
+                   mopac_abo_updates=5,
+                   mopac_ref_updates=2,
+                   mopac_buf_size=16,
+                   mopac_drain_freq=1,
+                   mopac_queue_th=8)
+
+# Sensitivity of MOPAC queue threshold
+for qth in [2,4,8,16]:
+    ath = get_mopac_ath(search_for_ath(500), 8, qth)
+    write_ini_file(f'config_dramsim3/prac/sens_mopac_qth/qth{qth}.ini', ath,
+                   pac_prob=8,
+                   mopac_abo_updates=5,
+                   mopac_ref_updates=2,
+                   mopac_buf_size=16,
+                   mopac_drain_freq=1,
+                   mopac_queue_th=qth)
+
+# Sensitivity to drain frequency
+for nrh in [250, 500, 1000]:
+    pr = 2 * (nrh//125)
+    mopac_sens_ath = get_mopac_ath(search_for_ath(nrh), pr, 8)
+    for df in [0, 1, 2, 4]:
+        write_ini_file(f'config_dramsim3/prac/sens_mopac_df/df{df}_nrh{nrh}.ini', ath,
+                       pac_prob=pr,
+                       mopac_abo_updates=5,
+                       mopac_ref_updates=df,
+                       mopac_buf_size=16,
+                       mopac_drain_freq=1,
+                       mopac_queue_th=32)
+
 
 ##################################################################
 ##################################################################
 
 # PAC with N_RH = 125, 250, 500, 1000, 2000
-for nrh in [125, 250, 500, 1000, 2000]:
+for nrh in [125, 250, 500, 1000, 2000, 4000]:
     pr = 2 * (nrh//125)
     ath = get_pac_ath(search_for_ath(nrh), pr)
+    print(nrh, search_for_ath(nrh), pr, ath)
     write_ini_file(f'config_dramsim3/prac/pac/nrh{nrh}.ini', ath, pac_prob=pr)
 
 ##################################################################
 ##################################################################
 
-for nrh in [125, 250, 500, 1000, 2000]:
+for nrh in [125, 250, 500, 1000, 2000, 4000]:
     pr = 2 * (nrh//125)
-    ath = get_pac_ath(search_for_ath(nrh), pr)
+    ath = get_mopac_ath(search_for_ath(nrh), pr, 8)
 
     if nrh <= 500:
-        mopac_ref_updates = 2
+        mopac_ref_updates = 1000//nrh
         mopac_drain_freq = 1
-    else nrh == 1000:
+    else:
         mopac_ref_updates = 1
         mopac_drain_freq = nrh//1000
     write_ini_file(f'config_dramsim3/prac/mopac/nrh{nrh}.ini',\
@@ -219,7 +270,8 @@ for nrh in [125, 250, 500, 1000, 2000]:
             mopac_buf_size=16,
             mopac_abo_updates=5,
             mopac_ref_updates=mopac_ref_updates,
-            mopac_drain_freq=mopac_drain_freq)
+            mopac_drain_freq=mopac_drain_freq,
+            mopac_queue_th=8)
 
 ##################################################################
 ##################################################################

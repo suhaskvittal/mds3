@@ -91,6 +91,13 @@ SimpleStats::SimpleStats(const Config& config, int channel_id)
     InitStat("num_moat_mitigations", "counter", "MOAT mitigations");
     InitStat("num_mopac_alerts_buf_full", "counter", "MOPAC alerts due to the MOPAC buffer being full");
     InitStat("num_mopac_buf_ins", "counter", "Number of MOPAC buffer insertions");
+    InitStat("num_mopac_alerts_qth", "counter", "MOPAC alerts due to timeliness");
+
+    InitStat("rows_ge_32_acts", "counter", "Number of rows with >=32 acts in a tREFW");
+    InitStat("rows_ge_64_acts", "counter", "Number of rows with >=64 acts in a tREFW");
+    InitStat("rows_ge_128_acts", "counter", "Number of rows with >=128 acts in a tREFW");
+    InitStat("rows_ge_200_acts", "counter", "Number of rows with >=200 acts in a tREFW");
+    InitStat("rows_ge_256_acts", "counter", "Number of rows with >=256 acts in a tREFW");
 
     // some irregular stats
     InitStat("average_bandwidth", "calculated", "Average bandwidth");
