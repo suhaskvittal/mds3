@@ -23,7 +23,9 @@ BUILDS = [
     ('PRAC_ONLY_DELAY', 1),
     ('PRAC_MOAT', 2),
     ('PRAC_PAC', 3),
-    ('PRAC_MOPAC', 4)
+    ('PRAC_MOPAC', 4),
+    ('PRAC_PAC_RP', 3),
+    ('PRAC_MOPAC_RP', 4)
 ]
 
 ##################################################################
@@ -35,9 +37,12 @@ if EXEC_WHERE == 'pace':
 # Build directories.
 os.system('rm -rf builds ; mkdir builds')
 for (b, pracnum) in BUILDS:
+    extra_opts = ''
+    if 'RP' in b:
+        extra_opts = '-DROWPRESS=ON'
     cmd =\
 fr'''cd builds ; mkdir {b} && cd {b}
-cmake ../.. {COMMON_OPTS} -DUSE_PRAC={pracnum}
+cmake ../.. {COMMON_OPTS} -DUSE_PRAC={pracnum} {extra_opts}
 make -j8
   '''
     print(cmd)

@@ -189,6 +189,10 @@ class Config {
      * */
     int tRP2;
     int tRAS2;
+    /*
+     * Rowpress timing
+     * */
+    int tON;
 
     int epoch_period;
     int output_level;

@@ -126,6 +126,19 @@ BankState::GetReadyCommand(const Command& cmd, uint64_t clk) const {
                 case CommandType::WRITE_PRECHARGE2:
                     if (cmd.Row() == open_row_) {
                         required_type = cmd.cmd_type;
+#if defined(ROWPRESS)
+                        // Forced row closure
+                        if (clk - row_open_clk_ > config_.tON) {
+                            bool pre2 = GetPrechargeCmd(config_.pac_prob) == CommandType::PRECHARGE2;
+                            if (pre2) {
+                                required_type = (required_type == CommandType::READ) ?
+                                                CommandType::READ_PRECHARGE2 : CommandType::WRITE_PRECHARGE2;
+                            } else {
+                                required_type = (required_type == CommandType::READ) ?
+                                                CommandType::READ_PRECHARGE : CommandType::WRITE_PRECHARGE;
+                            }
+                        }
+#endif
                     } else {
                         required_type = GetPrechargeCmd(config_.pac_prob);
                     }
@@ -219,7 +232,9 @@ void BankState::UpdateState(const Command& cmd, uint64_t clk) {
                 case CommandType::WRITE_PRECHARGE:
                 case CommandType::PRECHARGE:
                     pac_next_pre_cmd_is_valid = false;
-
+#if defined(ROWPRESS) && USE_PRAC==PRAC_IMPL_MOPAC
+                    MopacHandleRowpress(clk);
+#endif
                     state_ = State::CLOSED;
                     open_row_ = -1;
                     row_hit_count_ = 0;
@@ -276,6 +291,7 @@ void BankState::UpdateState(const Command& cmd, uint64_t clk) {
                 case CommandType::ACTIVATE:
                     state_ = State::OPEN;
                     open_row_ = cmd.Row();
+                    row_open_clk_ = clk;
                     // [Stats]
                     acts_counter_++;
                     simple_stats_.Increment(acts_stat_name_);
@@ -384,10 +400,7 @@ void BankState::PrintState() const {
 
 bool
 BankState::CheckAlert() {
-    if (mopac_critical_rows_ > 0) {
-        simple_stats_.Increment("num_mopac_alerts_qth");
-        return true;
-    } else if (mopac_buf_.size() >= config_.mopac_buf_size) {
+    if (mopac_buf_.size() >= config_.mopac_buf_size) {
         simple_stats_.Increment("num_mopac_alerts_buf_full");
         return true;
     } else if (moat_row_valid_) {
@@ -444,6 +457,8 @@ BankState::MoatHandleRef() {
 ///////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////
 
+void SafeDecrement(size_t x) { if (x) --x; }
+
 void
 BankState::MopacUpdatePRAC(size_t r, size_t by) {
     prac_[r] += by;
@@ -474,7 +489,7 @@ BankState::MopacHandleCriticalRow() {
         if (it->actr_ >= config_.mopac_queue_th) {
             MopacUpdatePRAC(it->row_, it->sctr_);
             it = mopac_buf_.erase(it);
-            --mopac_critical_rows_;
+            SafeDecrement(mopac_critical_rows_);
             break;
         } else {
             ++it;
@@ -491,7 +506,7 @@ BankState::MopacHandleRef() {
     for (auto it = mopac_buf_.begin(); it != mopac_buf_.end(); ) {
         if (it->row_ >= lwr && it->row_ < upp) {
             if (it->actr_ >= config_.mopac_queue_th) {
-                --mopac_critical_rows_;
+                SafeDecrement(mopac_critical_rows_);
             }
             it = mopac_buf_.erase(it);
         } else {
@@ -514,16 +529,7 @@ void
 BankState::MopacMitigate() {
     // SO this will occur during RFMab. For MOPAC, we will hijack the use of
     // RFMab to simply update counters.
-    if (mopac_critical_rows_ > 0) {
-        size_t mits_avail = config_.mopac_abo_updates;
-        while (mits_avail--) {
-            if (mopac_critical_rows_ > 0) {
-                MopacHandleCriticalRow();
-            } else {
-                MopacFlushNextCtr();
-            }
-        }
-    } else if (mopac_buf_.size() >= config_.mopac_buf_size) {
+    if (mopac_buf_.size() >= config_.mopac_buf_size) {
         MopacFlushAllCtrs();
     } else if (moat_row_valid_ && prac_[moat_row_] >= moat_ath_) {
         MoatMitigate();
@@ -559,6 +565,30 @@ BankState::MopacCtrUpdate() {
     if ((++mopac_act_ctr_) == config_.pac_prob) {
         mopac_act_ctr_ = 0;
         mopac_mint_sel_ = rng() % config_.pac_prob;
+    }
+}
+
+///////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////
+
+void
+BankState::MopacHandleRowpress(uint64_t clk) {
+    bool found = false;
+    for (auto it = mopac_buf_.begin(); it != mopac_buf_.end(); it++) {
+        if (it->row_ == open_row_) {
+            found = true;
+            break;
+        }
+    }
+    if (!found) return;
+
+    uint64_t clk_on = clk - row_open_clk_;
+    size_t n_acts = ((size_t) ceil( ((double)clk_on) / ((double)config_.tON) )) - 1;
+    
+    simple_stats_.AddValue("row_open_time", n_acts);
+
+    while (n_acts--) {
+        MopacCtrUpdate();
     }
 }
 

@@ -319,12 +319,12 @@ elif STAT_WHICH == 'sens_mopac_df':
 
 elif STAT_WHICH == 'pac':
     dump_stats(['BASE_', 'PRAC_ONLY_DELAY',
-                'PAC_nrh125',
-                'PAC_nrh250',
-                'PAC_nrh500',
-                'PAC_nrh1000',
-                'PAC_nrh2000',
-                'PAC_nrh4000'], output_where='data/pac')
+                'PRAC_PAC_nrh125',
+                'PRAC_PAC_nrh250',
+                'PRAC_PAC_nrh500',
+                'PRAC_PAC_nrh1000',
+                'PRAC_PAC_nrh2000',
+                'PRAC_PAC_nrh4000'], output_where='data/pac')
 elif STAT_WHICH == 'mopac':
     dump_stats(['BASE_', 'PRAC_ONLY_DELAY',
                 'MOPAC_nrh125',
@@ -337,3 +337,13 @@ elif STAT_WHICH == 'mopac':
 ##########################################################
 ##########################################################
 
+elif STAT_WHICH == 'pac_rp':
+    dump_stats(['BASE_', 'PRAC_ONLY_DELAY',
+                'PRAC_PAC_RP_nrh250',
+                'PRAC_PAC_RP_nrh500',
+                'PRAC_PAC_RP_nrh1000'], output_where='data/pac_rp')
+elif STAT_WHICH == 'mopac_rp':
+    dump_stats(['BASE_', 'PRAC_ONLY_DELAY',
+                'MOPAC_RP_nrh250',
+                'MOPAC_RP_nrh500',
+                'MOPAC_RP_nrh1000'], output_where='data/mopac_rp')

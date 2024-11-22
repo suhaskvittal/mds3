@@ -264,7 +264,6 @@ Command ChannelState::GetReadyCommand(const Command& cmd, uint64_t clk) const {
         if (alert_n && clk > (config_.tABO + last_alert_clk_)) {
             // Calling a non-const function from a const function
             const_cast<ChannelState*>(this)->RankNeedRFM(ready_cmd.Rank(), true);
-            const_cast<ChannelState*>(this)->ResetAlert();
             return Command();
         }
         
@@ -314,8 +313,10 @@ ChannelState::UpdateState(const Command& cmd, uint64_t clk) {
 
         if (cmd.IsRFM()) {
             RankNeedRFM(cmd.Rank(), false);
+            const_cast<ChannelState*>(this)->ResetAlert();
         } else if (cmd.IsRefresh()) {
             RankNeedRefresh(cmd.Rank(), false);
+            const_cast<ChannelState*>(this)->ResetAlert();
         } else if (cmd.cmd_type == CommandType::SREF_ENTER) {
             rank_is_sref_[cmd.Rank()] = true;
         } else if (cmd.cmd_type == CommandType::SREF_EXIT) {

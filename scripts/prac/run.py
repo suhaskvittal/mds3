@@ -121,6 +121,14 @@ elif EXEC_WHAT == 'mopac':
 ##################################################################
 ##################################################################
 
+elif EXEC_WHAT == 'pac_rp':
+    configs = [ ('PRAC_PAC_RP', f'nrh{nrh}', f'prac/pac_rp/nrh{nrh}.ini') for nrh in [250,500,1000] ]
+elif EXEC_WHAT == 'mopac_rp':
+    configs = [ ('PRAC_MOPAC_RP', f'nrh{nrh}', f'prac/mopac_rp/nrh{nrh}.ini') for nrh in [250,500,1000] ]
+
+##################################################################
+##################################################################
+
 else:
     print('Unrecognized experiment:', EXEC_WHAT)
     exit(1)

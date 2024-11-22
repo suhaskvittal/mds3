@@ -79,6 +79,11 @@ if (USE_PRAC)
     target_compile_definitions(dramsim3 PRIVATE -DUSE_PRAC=${USE_PRAC})
 endif()
 
+if (ROWPRESS)
+    message("Enabled rowpress!")
+    target_compile_definitions(dramsim3 PRIVATE -DROWPRESS)
+endif()
+
 target_include_directories(dramsim3 INTERFACE src)
 target_compile_options(dramsim3 PRIVATE -Wall)
 target_link_libraries(dramsim3 PUBLIC inih format)

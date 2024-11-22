@@ -287,6 +287,9 @@ void Config::InitSystemParams() {
 
     std::cout << "PRAC: [ moat_ath = " << moat_ath << ", (pac) 1/p = " << pac_prob << ", mopac buf size = " 
         << mopac_buf_size << ", updates = " << mopac_ref_updates << ";" << mopac_abo_updates << " ]\n";
+#ifdef ROWPRESS
+    std::cout << "rowpress enabled!\n";
+#endif
 
     return;
 }
@@ -385,6 +388,8 @@ void Config::InitTimingParams() {
 
     tRP2 = GetInteger("timing", "tRP2", 86);
     tRAS2 = GetInteger("timing", "tRAS2", 38);
+
+    tON = GetInteger("timing", "tON", 433);
 
     // calculated timing
     RL = AL + CL;

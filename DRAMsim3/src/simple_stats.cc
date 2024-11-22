@@ -99,6 +99,9 @@ SimpleStats::SimpleStats(const Config& config, int channel_id)
     InitStat("rows_ge_200_acts", "counter", "Number of rows with >=200 acts in a tREFW");
     InitStat("rows_ge_256_acts", "counter", "Number of rows with >=256 acts in a tREFW");
 
+    InitHistoStat("row_open_time", "Row open time in # of tON", 0, 32, 8);
+    InitStat("average_row_open_time", "calculated", "Average row open time");
+
     // some irregular stats
     InitStat("average_bandwidth", "calculated", "Average bandwidth");
     InitStat("total_energy", "calculated", "Total energy (pJ)");
@@ -455,6 +458,8 @@ void SimpleStats::UpdateEpochStats() {
     calculated_["mean_t_btwn_write_drains"] = GetHistoAvg(epoch_histo_counts_.at("t_btwn_write_drains"));
     calculated_["mean_t_btwn_opp_write_drains"] = GetHistoAvg(epoch_histo_counts_.at("t_btwn_opp_write_drains"));
 
+    calculated_["average_row_open_time"] = GetHistoAvg(epoch_histo_counts_.at("row_open_time"));
+
     UpdatePrints(true);
     for (auto& it : epoch_counters_) {
         it.second = 0;
@@ -519,6 +524,8 @@ void SimpleStats::UpdateFinalStats() {
 
     calculated_["mean_t_btwn_write_drains"] = GetHistoAvg(epoch_histo_counts_.at("t_btwn_write_drains"));
     calculated_["mean_t_btwn_opp_write_drains"] = GetHistoAvg(epoch_histo_counts_.at("t_btwn_opp_write_drains"));
+
+    calculated_["average_row_open_time"] = GetHistoAvg(epoch_histo_counts_.at("row_open_time"));
 
     UpdatePrints(false);
     return;

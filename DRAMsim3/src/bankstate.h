@@ -64,6 +64,8 @@ private:
     void MopacMitigate(void);
     void MopacCtrUpdate(void);
 
+    void MopacHandleRowpress(uint64_t);
+
     const Config& config_;
     SimpleStats& simple_stats_;
 
@@ -76,6 +78,7 @@ private:
 
     // Currently open row
     int open_row_;
+    uint64_t row_open_clk_ =0;
 
     // consecutive accesses to one row
     int row_hit_count_;
