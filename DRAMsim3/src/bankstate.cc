@@ -400,7 +400,10 @@ void BankState::PrintState() const {
 
 bool
 BankState::CheckAlert() {
-    if (mopac_buf_.size() >= config_.mopac_buf_size) {
+    if (mopac_critical_rows_ > 0) {
+        simple_stats_.Increment("num_mopac_alerts_qth");
+        return true;
+    } else if (mopac_buf_.size() >= config_.mopac_buf_size) {
         simple_stats_.Increment("num_mopac_alerts_buf_full");
         return true;
     } else if (moat_row_valid_) {
@@ -486,7 +489,7 @@ BankState::MopacFlushAllCtrs() {
 void
 BankState::MopacHandleCriticalRow() {
     for (auto it = mopac_buf_.begin(); it != mopac_buf_.end(); ) {
-        if (it->actr_ >= config_.mopac_queue_th) {
+        if (it->sctr_ >= config_.mopac_queue_th) {
             MopacUpdatePRAC(it->row_, it->sctr_);
             it = mopac_buf_.erase(it);
             SafeDecrement(mopac_critical_rows_);
@@ -505,7 +508,7 @@ BankState::MopacHandleRef() {
            upp = ref_idx_+config_.rows_refreshed;
     for (auto it = mopac_buf_.begin(); it != mopac_buf_.end(); ) {
         if (it->row_ >= lwr && it->row_ < upp) {
-            if (it->actr_ >= config_.mopac_queue_th) {
+            if (it->sctr_ >= config_.mopac_queue_th) {
                 SafeDecrement(mopac_critical_rows_);
             }
             it = mopac_buf_.erase(it);
@@ -529,7 +532,9 @@ void
 BankState::MopacMitigate() {
     // SO this will occur during RFMab. For MOPAC, we will hijack the use of
     // RFMab to simply update counters.
-    if (mopac_buf_.size() >= config_.mopac_buf_size) {
+    if (mopac_critical_rows_ > 0) {
+        MopacHandleCriticalRow();
+    } else if (mopac_buf_.size() >= config_.mopac_buf_size) {
         MopacFlushAllCtrs();
     } else if (moat_row_valid_ && prac_[moat_row_] >= moat_ath_) {
         MoatMitigate();
@@ -543,10 +548,6 @@ BankState::MopacCtrUpdate() {
     auto eit = mopac_buf_.end();
     for (auto it = mopac_buf_.begin(); it != mopac_buf_.end(); it++) {
         if (it->row_ == open_row_) {
-            ++it->actr_;
-            if (it->actr_ == config_.mopac_queue_th) {
-                ++mopac_critical_rows_;
-            }
             eit = it;
             break;
         }
@@ -558,6 +559,9 @@ BankState::MopacCtrUpdate() {
             mopac_buf_.push_back(e);
         } else {
             ++eit->sctr_;
+            if (eit->sctr_ == config_.mopac_queue_th) {
+                ++mopac_critical_rows_;
+            }
         }
         // Check if entry is already in mopac_buf.
         simple_stats_.Increment("num_mopac_buf_ins");

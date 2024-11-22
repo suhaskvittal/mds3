@@ -25,7 +25,6 @@ struct MIRZA_Q_Entry {
 struct MopacEntry {
     size_t row_;
     size_t sctr_ =0;
-    size_t actr_ =0;
 };
 
 class BankState {

@@ -14,4 +14,4 @@ CONFIGS = [
 
 for c in CONFIGS:
     os.system(f'python scripts/prac/run.py pace {c}')
-    time.sleep(90)  # Wait 5 minutes to avoid QoS violation
+    time.sleep(180)  # Wait 5 minutes to avoid QoS violation

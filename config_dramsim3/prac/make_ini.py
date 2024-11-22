@@ -55,9 +55,10 @@ def get_pac_ath(ath: int, p: int, fprob: float):
         i += 1
 
 def get_mopac_ath(ath: int, p: int, qth: int, fprob: float):
-    ath1 = ath - get_pac_ath(ath,p,fprob)
-    ath2 = ath1 - qth
-    return get_pac_ath(ath2, p, fprob)
+#   ath1 = ath - get_pac_ath(ath,p,fprob)
+#   ath2 = ath1 - qth
+#   return get_pac_ath(ath2, p, fprob)
+    return get_pac_ath(ath, p, fprob) - qth + 1
 
 ##################################################################
 ##################################################################
@@ -181,10 +182,12 @@ write_ini_file('config_dramsim3/prac/baseline.ini', 128,8,5,5,1)
 ##################################################################
 ##################################################################
 
+DEFAULT_QTH = 4
+
 # Sensitivity on MOPAC Buffer Size
 for nrh in [250, 500, 1000]:
     pr = 2 * (nrh//125)
-    mopac_sens_ath = get_mopac_ath(search_for_ath(nrh), pr, 32, get_fprob(nrh))
+    mopac_sens_ath = get_mopac_ath(search_for_ath(nrh), pr, DEFAULT_QTH, get_fprob(nrh))
     if nrh <= 500:
         mopac_ref_updates = 1000//nrh
         mopac_drain_freq = 1
@@ -199,7 +202,7 @@ for nrh in [250, 500, 1000]:
                             mopac_ref_updates=mopac_ref_updates,
                             mopac_buf_size=mopac_buf_size,
                             mopac_drain_freq=mopac_drain_freq,
-                            mopac_queue_th=32)
+                            mopac_queue_th=DEFAULT_QTH)
 
 # Sensitivity on MOAT NRH
 for nrh in [50,75,100,200,500,1000,4000]:
@@ -218,7 +221,7 @@ for pr in [2,4,8,16]:
                    mopac_ref_updates=2,
                    mopac_buf_size=16,
                    mopac_drain_freq=1,
-                   mopac_queue_th=32)
+                   mopac_queue_th=DEFAULT_QTH)
 
 # Sensitivity of MOPAC queue threshold
 for qth in [2,4,8,16]:
@@ -234,7 +237,7 @@ for qth in [2,4,8,16]:
 # Sensitivity to drain frequency
 for nrh in [250, 500, 1000]:
     pr = 2 * (nrh//125)
-    mopac_sens_ath = get_mopac_ath(search_for_ath(nrh), pr, 32, get_fprob(nrh))
+    mopac_sens_ath = get_mopac_ath(search_for_ath(nrh), pr, DEFAULT_QTH, get_fprob(nrh))
     for df in [0, 1, 2, 4]:
         write_ini_file(f'config_dramsim3/prac/sens_mopac_df/df{df}_nrh{nrh}.ini', ath,
                        pac_prob=pr,
@@ -242,7 +245,7 @@ for nrh in [250, 500, 1000]:
                        mopac_ref_updates=df,
                        mopac_buf_size=16,
                        mopac_drain_freq=1,
-                       mopac_queue_th=32)
+                       mopac_queue_th=DEFAULT_QTH)
 
 
 ##################################################################
@@ -259,7 +262,7 @@ for nrh in [125, 250, 500, 1000, 2000, 4000]:
 
 for nrh in [125, 250, 500, 1000, 2000, 4000]:
     pr = 2 * (nrh//125)
-    ath = get_mopac_ath(search_for_ath(nrh), pr, 32, get_fprob(nrh))
+    ath = get_mopac_ath(search_for_ath(nrh), pr, DEFAULT_QTH, get_fprob(nrh))
 
     if nrh <= 500:
         mopac_ref_updates = 1000//nrh
@@ -274,7 +277,7 @@ for nrh in [125, 250, 500, 1000, 2000, 4000]:
             mopac_abo_updates=5,
             mopac_ref_updates=mopac_ref_updates,
             mopac_drain_freq=mopac_drain_freq,
-            mopac_queue_th=32)
+            mopac_queue_th=DEFAULT_QTH)
 
 ##################################################################
 #################################################################
@@ -290,7 +293,7 @@ for nrh in [250, 500, 1000]:
     pr = 2*(nrh//125)
     if nrh == 250:
         pr = 3
-    ath = get_mopac_ath(search_for_ath(nrh)/1.5, pr, 32, get_fprob(nrh))
+    ath = get_mopac_ath(search_for_ath(nrh)/1.5, pr, DEFAULT_QTH, get_fprob(nrh))
 
     if nrh <= 500:
         mopac_ref_updates = 1000//nrh
@@ -305,4 +308,4 @@ for nrh in [250, 500, 1000]:
             mopac_abo_updates=5,
             mopac_ref_updates=mopac_ref_updates,
             mopac_drain_freq=mopac_drain_freq,
-            mopac_queue_th=32)
+            mopac_queue_th=DEFAULT_QTH)
